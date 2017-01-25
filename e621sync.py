@@ -15,7 +15,16 @@ def run_rule(name, rule):
         print('Making directory: {}'.format(rule['download_directory']))
         os.makedirs(rule['download_directory'])
 
-    print('Building file list', end='')
+    tags = []
+    tags.extend(CONFIG['common_tags'])
+    tags.extend(rule['tags'])
+
+    print('Tags: {}'.format(', '.join(tags)))
+
+    if not check_tags(tags):
+        return
+
+    print('Building file list...', end='')
 
     # Build complete list of all data first
     # For now, just be reasonable and don't build large searches?
@@ -23,7 +32,7 @@ def run_rule(name, rule):
     before_id = None
     download_list = []
     while True:
-        items = get_list(rule['tags'], before_id)
+        items = get_list(tags, before_id)
 
         if len(items) == 0:
             break
@@ -62,18 +71,38 @@ def run_rule(name, rule):
                                                                item['dest'], e))
 
 
+def check_tags(tags):
+    """
+    Quick check to see if there is anything funny about the tags
+     - Check for 'set:' and no 'order:-id'
+     - Check for duplicates
+     - Check for more than 6 tags
+    """
+    has_set = False
+    has_correct_order = False
+    for tag in tags:
+        if 'set:' in tag:
+            has_set = True
+        elif tag == 'order:-id':
+            has_correct_order = True
+
+    if has_set and not has_correct_order:
+        print(" - Warning:  Using 'set:' tag without an 'oder:-id' tag.  May not see all results.")
+        return True
+
+    if len(tags) > 6:
+        print(' - Error:  More than 6 tags specified.  API limit is 6.')
+        return False
+
+    if len(tags) != len(set(tags)):
+        print(' - Warning:  Duplicate tags')
+        return True
+
+    return True
+
+
 def get_list(tags, before_id=None):
-    all_tags = []
-    all_tags.extend(tags)
-
-    # Apply common tags
-    all_tags.extend(CONFIG['common_tags'])
-
-    # TODO: While a good idea, this eats into our 6 tag maximum
-    # Always order by image id  (fixes issue with sets being in order added to set)
-    # all_tags.append('order:-id')
-
-    args = {'tags': ' '.join(all_tags), 'limit': CONFIG['list_limit']}
+    args = {'tags': ' '.join(tags), 'limit': CONFIG['list_limit']}
 
     # If None, just get the latest
     if before_id is not None:
