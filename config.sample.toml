@@ -1,0 +1,47 @@
+###################
+# Global settings #
+###################
+
+# how many items to search for at a time (75 is default, 320 is max)
+list_limit = 100
+
+# number of download threads
+max_workers = 4
+
+# tags to always apply to rules.  Note: This applies to the 6 tag maximum
+common_tags = [ "rating:safe" ]
+
+# Tag blacklist, do not count towards 6 tag limit, these tags are applied after getting list of items to download
+# Doesn't support score: or rating: pseudo tags
+blacklist_tags = [ "duck" ]
+
+# Minimum score for item to be downloaded
+# If possible, this will be added to the requested tags automatically, other wise will be processed client side
+minimum_score = 10
+
+
+#########
+# Rules #
+#########
+
+[rules.testing]
+
+# Search tags
+# Note: If searching for a 'set:' an 'order:-id' is automatically added taking up one the 6 tag slots
+tags = [ "tagme" ]
+
+# Can overwrite the default minimum_score by setting it again inside a rule
+minimum_score = 2
+
+# Can remove the common blacklist tags by setting to empty list too
+blacklist_tags = []
+
+# download directory, must have a trailing slash
+download_directory = "./downloads/tagme/"
+
+# Absolute directory of Windows would look like:
+# download_directory = "c:\\images\\tagme\\"
+# Or using single quotes:
+# download_directory = 'c:\images\tagme\'
+
+# Note: Directories under Windows also needs to have a trailing (back) slash...

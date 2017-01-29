@@ -1,28 +1,22 @@
 import concurrent.futures
 import os
 import requests
-import toml
+
+# wow, that's a awful looking import
+from configuration import Configuration
 
 
-USER_AGENT = 'e621sync/0.1'
-CONFIG = toml.load(open('config.toml'))
+USER_AGENT = 'e621sync/0.2 (e621 username zero)'
+CONFIG = Configuration()
+CONFIG.load('config.toml')
 
 
-def run_rule(name, rule):
-    print('Processing rule: {}'.format(name))
+def run_rule(rule):
+    print('Processing: {}'.format(rule))
 
-    if not os.path.exists(rule['download_directory']):
-        print('Making directory: {}'.format(rule['download_directory']))
-        os.makedirs(rule['download_directory'])
-
-    tags = []
-    tags.extend(CONFIG['common_tags'])
-    tags.extend(rule['tags'])
-
-    print('Tags: {}'.format(', '.join(tags)))
-
-    if not check_tags(tags):
-        return
+    if not os.path.exists(rule.download_directory):
+        print('Making directory: {}'.format(rule.download_directory))
+        os.makedirs(rule.download_directory)
 
     print('Building file list...', end='')
 
@@ -32,7 +26,7 @@ def run_rule(name, rule):
     before_id = None
     download_list = []
     while True:
-        items = get_list(tags, before_id)
+        items = get_list(rule.tags, before_id)
 
         if len(items) == 0:
             break
@@ -40,11 +34,16 @@ def run_rule(name, rule):
         print('.', end='')
 
         for item in items:
-            filename = rule['download_directory'] + str(item['id']) + '_' + item['md5'] + '.' + item['file_ext']
 
             # keep track of were we are up to
             if before_id is None or item['id'] < before_id:
                 before_id = item['id']
+
+            # client side tag check
+            if has_blacklisted_tag(item, rule.blacklist_tags):
+                continue
+
+            filename = rule.download_directory + str(item['id']) + '_' + item['md5'] + '.' + item['file_ext']
 
             if not os.path.exists(filename):
                 download_list.append({'id': item['id'], 'url': item['file_url'], 'dest': filename})
@@ -54,7 +53,7 @@ def run_rule(name, rule):
     print('')
     print('Found {} new items to fetch'.format(count_total_items))
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=CONFIG['max_workers']) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=CONFIG.max_workers) as executor:
         futures = {executor.submit(download, item['url'], item['dest']): item for item in download_list}
 
         for future in concurrent.futures.as_completed(futures):
@@ -70,39 +69,21 @@ def run_rule(name, rule):
                                                                count_total_items,
                                                                item['dest'], e))
 
+    print('')
 
-def check_tags(tags):
-    """
-    Quick check to see if there is anything funny about the tags
-     - Check for 'set:' and no 'order:-id'
-     - Check for duplicates
-     - Check for more than 6 tags
-    """
-    has_set = False
-    has_correct_order = False
-    for tag in tags:
-        if 'set:' in tag:
-            has_set = True
-        elif tag == 'order:-id':
-            has_correct_order = True
 
-    if has_set and not has_correct_order:
-        print(" - Warning:  Using 'set:' tag without an 'oder:-id' tag.  May not see all results.")
-        return True
+def has_blacklisted_tag(item, blacklist_tags):
+    tags = item['tags'].split(' ')
 
-    if len(tags) > 6:
-        print(' - Error:  More than 6 tags specified.  API limit is 6.')
-        return False
+    for blacklisted_tag in blacklist_tags:
+        if blacklisted_tag in tags:
+            return True
 
-    if len(tags) != len(set(tags)):
-        print(' - Warning:  Duplicate tags')
-        return True
-
-    return True
+    return False
 
 
 def get_list(tags, before_id=None):
-    args = {'tags': ' '.join(tags), 'limit': CONFIG['list_limit']}
+    args = {'tags': ' '.join(tags), 'limit': CONFIG.list_limit}
 
     # If None, just get the latest
     if before_id is not None:
@@ -125,5 +106,5 @@ def download(url, filename):
 
 
 if __name__ == '__main__':
-    for rule_name in CONFIG['rules']:
-        run_rule(rule_name, CONFIG['rules'][rule_name])
+    for this_rule in CONFIG.rules:
+        run_rule(this_rule)

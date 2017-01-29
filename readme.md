@@ -18,7 +18,7 @@ Really simple python project to download files from e621.net based on tags
 ## install
 
     pip install -r requirements.txt
-    cp config.toml.sample config.toml
+    cp config.sample.toml config.toml
     
     
 ## configuration
@@ -36,6 +36,8 @@ To create a new rule simple follow this template:
 The rule name (e.g. `UniqueTagName`) itself isn't important, it should just be unique.  You can include spaces in name 
 too e.g. `[rule."Proper Sentence"]`.
 
+You can override the global `minimum_score` and `blacklist_tags` in each rule
+
 The file format is in TOML, if you want more information about the syntax see:
 
  * https://github.com/toml-lang/toml
@@ -50,13 +52,8 @@ The file format is in TOML, if you want more information about the syntax see:
 
 1. Downloaded file names are hard coded to `"{id}_{md5}.{ext}"`
 
-2. When searching via a set, the default order returned is by the date the item was added to the set.  You will need to 
-include the tag 'order:-id' to correctly discover all items.  e.g.
-
-
-    [rule."A Set"]
-    tags = ["set:myset", "order:-id"]
-    download_directory = "./downloads/my_set/"
-    
-3. Every run all items are re-checked and re-downloaded if missing.  There is no id, or date checks to only update new
+2. Every run all items are re-checked and re-downloaded if missing.  There is no id, or date checks to only update new
 files.
+
+3. With many rules, it's much slower to check the rules then actually download the files  
+(checking is single threaded, while downloading is multi-threaded)
