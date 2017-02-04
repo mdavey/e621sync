@@ -54,6 +54,3 @@ The file format is in TOML, if you want more information about the syntax see:
 
 2. Every run all items are re-checked and re-downloaded if missing.  There is no id, or date checks to only update new
 files.
-
-3. With many rules, it's much slower to check the rules then actually download the files  
-(checking is single threaded, while downloading is multi-threaded)

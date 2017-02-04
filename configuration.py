@@ -1,40 +1,10 @@
 import toml
 
+from rule import Rule
+
 
 class ConfigurationException(Exception):
     pass
-
-
-class Rule:
-    def __init__(self, name):
-        self.name = name
-        self.tags = []
-        self.download_directory = None
-        self.blacklist_tags = []
-        self.minimum_score = -10
-
-    def __str__(self):
-        return "Rule<{}>  tags: {}  download_directory: {}  blacklist_tags: {}  minimum_score: {}".format(
-            self.name, ','.join(self.tags), self.download_directory, ','.join(self.blacklist_tags), self.minimum_score)
-
-    def has_score_tag(self):
-        """Does this rule use a 'score:' tag"""
-        for tag in self.tags:
-            if tag.find('score:') == 0:
-                return True
-        return False
-
-    def has_set_and_needs_order_tag(self):
-        """If a 'set:' tag is used, check if the 'order:-id' tag is missing"""
-        has_set = False
-        has_correct_order = False
-        for tag in self.tags:
-            if tag.find('set:') == 0:
-                has_set = True
-            elif tag == 'order:-id':
-                has_correct_order = True
-
-        return has_set and not has_correct_order
 
 
 class Configuration:
@@ -75,6 +45,7 @@ class Configuration:
             rule.blacklist_tags = self._parse_list_of_strings(rule_config, 'blacklist_tags', self.blacklist_tags)
             rule.minimum_score = self._parse_int(rule_config, 'minimum_score', -100000, 100000, self.minimum_score)
             rule.download_directory = self._parse_string(rule_config, 'download_directory', None)
+            rule.list_limit = self._parse_int(rule_config, 'list_limit', 10, 320, self.list_limit)
 
             if rule.has_set_and_needs_order_tag():
                 rule.tags.append('order:-id')
