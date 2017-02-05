@@ -37,7 +37,7 @@ class Configuration:
             rule_config = self._config['rules'][rule_name]
             rule = Rule(rule_name)
 
-            # TODO: Are common tags even a good idea?
+            # TODO: Are common tags even a good idea?  Would handling 'rating' be enough?
             rule.tags.extend(self.common_tags)
             rule.tags.extend(self._parse_list_of_strings(rule_config, 'tags', []))
 
@@ -47,14 +47,16 @@ class Configuration:
             rule.download_directory = self._parse_string(rule_config, 'download_directory', None)
             rule.list_limit = self._parse_int(rule_config, 'list_limit', 10, 320, self.list_limit)
 
-            if rule.has_set_and_needs_order_tag():
-                rule.tags.append('order:-id')
-
             # Sets are not ordered by id like general searches.  To make sure all items are found, need to order the
             # results by id (highest to lowest).  Check if the user used a 'set:' with an 'order:-id' and fix it.
             # TODO: And then hope that we don't go over 6 tags
+            if rule.has_set_and_needs_order_tag():
+                rule.tags.append('order:-id')
+
             if len(rule.tags) < 6 and not rule.has_score_tag():
                 rule.tags.append('score:>{}'.format(rule.minimum_score))
+
+            # TODO: should we try and apply some of the blacklist tags here too if < 6 tags?
 
             if len(rule.tags) == 0:
                 raise ConfigurationException("Rule {} has no tags".format(rule_name))
