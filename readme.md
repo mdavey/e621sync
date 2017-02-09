@@ -54,3 +54,5 @@ The file format is in TOML, if you want more information about the syntax see:
 
 2. Every run all items are re-checked and re-downloaded if missing.  There is no id, or date checks to only update new
 files.
+
+3. ctrl+c does not work very well  (ctrl+break may help).
