@@ -222,13 +222,18 @@ class DownloadItem:
         return 'DownloadItem<{}>  {}  {}'.format(self.rule.name, self.url, self.destination_filename)
 
     def download(self):
-        r = requests.get(self.url, headers={'User-Agent': USER_AGENT}, HTTP_DEFAULT_TIMEOUT=30)
+        r = requests.get(self.url, headers={'User-Agent': USER_AGENT}, timeout=HTTP_DEFAULT_TIMEOUT)
 
         with open(self.destination_filename, 'wb') as f:
             return f.write(r.content)
 
 
 def build_complete_download_list(rules, max_workers):
+    # TODO: This is wrong.  Rather then adding subsequent _get_list method calls to the end of the thread pool, we
+    #       call them 1-after-another in the build_download_list function.  This means if the last rule requires 10
+    #       _get_list calls then it will essentially be single threaded.
+    #
+    # I think we'll need to manage our own thread pool so we can keep add jobs while processing others
     download_list = []
     print('Found {:d} rules.  Building download list...'.format(len(rules)))
 
@@ -261,7 +266,7 @@ def start_downloading(download_list, max_workers):
             item = futures[future]
             try:
                 bytes_written = future.result()
-                print('[{}/{}]  Rule<{}>  {} ({:.0f KB})'.format(count_completed_items, len(download_list),
+                print('[{}/{}]  Rule<{}>  {} ({:.0f} KB)'.format(count_completed_items, len(download_list),
                                                                  item.rule.name, item.destination_filename,
                                                                  bytes_written / 1024))
             except Exception as e:
