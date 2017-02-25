@@ -4,6 +4,7 @@ import sys
 import os.path
 import argparse
 import toml
+from typing import List
 
 
 USER_AGENT = 'e621sync/0.31 (e621 username zero)'
@@ -24,12 +25,12 @@ class Configuration:
         self.minimum_score = -10
         self.rules = []
 
-    def load(self, filename):
+    def load(self, filename: str):
         with open(filename, 'r') as f:
             self.loads(f.read())
         return self
 
-    def loads(self, s):
+    def loads(self, s: str):
 
         try:
             self._config = toml.loads(s)
@@ -85,7 +86,7 @@ class Configuration:
             self.rules.append(rule)
 
     @staticmethod
-    def _parse_int(config, name, minimum, maximum, default):
+    def _parse_int(config, name: str, minimum: int, maximum: int, default: int = None):
         if name not in config:
             return default
 
@@ -97,7 +98,7 @@ class Configuration:
         return config[name]
 
     @staticmethod
-    def _parse_string(config, name, default):
+    def _parse_string(config, name: str, default: str = None):
         if name not in config:
             return default
 
@@ -107,7 +108,7 @@ class Configuration:
         return config[name]
 
     @staticmethod
-    def _parse_list_of_strings(config, name, default):
+    def _parse_list_of_strings(config, name: str, default: List[str] = None):
         if name not in config:
             return default
 
@@ -122,7 +123,7 @@ class Configuration:
 
 
 class Rule:
-    def __init__(self, name):
+    def __init__(self, name: str):
         self.name = name
         self.tags = []
         self.download_directory = None
@@ -130,18 +131,18 @@ class Rule:
         self.minimum_score = -10
         self.list_limit = 100
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Rule<{}>  tags: {}  download_directory: {}  blacklist_tags: {}  minimum_score: {}".format(
             self.name, ','.join(self.tags), self.download_directory, ','.join(self.blacklist_tags), self.minimum_score)
 
-    def has_score_tag(self):
+    def has_score_tag(self) -> bool:
         """Does this rule use a 'score:' tag"""
         for tag in self.tags:
             if tag.find('score:') == 0:
                 return True
         return False
 
-    def has_set_and_needs_order_tag(self):
+    def has_set_and_needs_order_tag(self) -> bool:
         """If a 'set:' tag is used, check if the 'order:-id' tag is missing"""
         has_set = False
         has_correct_order = False
@@ -157,7 +158,7 @@ class Rule:
         if not os.path.exists(self.download_directory):
             os.makedirs(self.download_directory)
 
-    def build_download_list(self):
+    def build_download_list(self) -> List[DownloadItem]:
         """
         Returns list of DownloadItem
         Uses before_id to keep requesting list_limit items at a time
@@ -165,10 +166,8 @@ class Rule:
         before_id = None
         download_list = []
         while True:
-            items = self._get_list(before_id)
 
-            if len(items) == 0:
-                break
+            items = self._get_list(before_id)
 
             for item in items:
                 # keep track of were we are up to
@@ -184,9 +183,13 @@ class Rule:
                 if not os.path.exists(filename):
                     download_list.append(DownloadItem(self, item['file_url'], filename))
 
+            # If we got 0 items it's the end, or if we got < list_limit items it's the end
+            if len(items) < self.list_limit:
+                break
+
         return download_list
 
-    def _get_list(self, before_id=None):
+    def _get_list(self, before_id: int = None):
         """Get the raw data for post/index.json"""
         args = {'tags': ' '.join(self.tags), 'limit': self.list_limit}
 
@@ -203,7 +206,7 @@ class Rule:
 
         return json
 
-    def _has_blacklisted_tag(self, tags):
+    def _has_blacklisted_tag(self, tags: List[str]) -> bool:
         """Checks if any of the passed tags are blacklisted"""
         for blacklisted_tag in self.blacklist_tags:
             if blacklisted_tag in tags:
@@ -213,7 +216,7 @@ class Rule:
 
 
 class DownloadItem:
-    def __init__(self, rule, url, destination_filename):
+    def __init__(self, rule: Rule, url: str, destination_filename: str):
         self.rule = rule
         self.url = url
         self.destination_filename = destination_filename
@@ -228,12 +231,27 @@ class DownloadItem:
             return f.write(r.content)
 
 
-def build_complete_download_list(rules, max_workers):
+def build_complete_download_list(rules: List[Rule], max_workers: int):
     # TODO: This is wrong.  Rather then adding subsequent _get_list method calls to the end of the thread pool, we
     #       call them 1-after-another in the build_download_list function.  This means if the last rule requires 10
     #       _get_list calls then it will essentially be single threaded.
     #
     # I think we'll need to manage our own thread pool so we can keep add jobs while processing others
+    #
+    # DownloadListManager2 fixed this, sort of... It's better in that it gets the 1st page of items for all rules, and
+    # then the next, etc, etc.  Except if there is a single rule with 100 pages, then we still end up sitting there
+    # single threaded for 90% of the time.
+    #
+    # I'm starting to feel I need to use the threading module, and a priority queue so that while the program is
+    # parsing that massive 100 page rule, it's already started to download the files from the other rules.
+    # Which then leads on to another solution which is to have max_workers sized thread pool for getting the items to
+    # download, and a 2nd max_workers sizes thread pool for downloading the files which we start to use immediately
+    # (though I don't think the concurrent.futures module would work very well for that either without a workaround
+    # for as_completed [as the futures list is always growing])
+    #
+    # Then again, is it good enough right now?  So what if it takes 30s longer, just cron it and never even see it again
+    #
+    # (It is also nice to see how many items were found first, before the download starts...)
     download_list = []
     print('Found {:d} rules.  Building download list...'.format(len(rules)))
 
@@ -255,7 +273,7 @@ def build_complete_download_list(rules, max_workers):
     return download_list
 
 
-def start_downloading(download_list, max_workers):
+def start_downloading(download_list: List[DownloadItem], max_workers: int):
     count_completed_items = 0
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
