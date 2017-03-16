@@ -31,10 +31,10 @@ minimum_score = 10
 tags = [ "tagme" ]
 
 # Can overwrite the default minimum_score by setting it again inside a rule
-minimum_score = 2
+# minimum_score = 2
 
 # Can remove the common blacklist tags by setting to empty list too
-blacklist_tags = []
+# blacklist_tags = []
 
 # download directory, must have a trailing slash
 download_directory = "./downloads/tagme/"
@@ -45,3 +45,8 @@ download_directory = "./downloads/tagme/"
 # download_directory = 'c:\images\tagme\'
 
 # Note: Directories under Windows also needs to have a trailing (back) slash...
+
+
+# [rules."Here we go again"]
+# tags = [ "rating:safe", "temmie_(undertale)", "pixel_(artwork)" ]
+# download_directory = 'c:\images\temmie\'

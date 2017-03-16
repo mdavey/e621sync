@@ -30,7 +30,6 @@ class Rule:
                 has_set = True
             elif tag == 'order:-id':
                 has_correct_order = True
-
         return has_set and not has_correct_order
 
     def has_blacklisted_tag(self, tags: List[str]) -> bool:
@@ -38,5 +37,4 @@ class Rule:
         for blacklisted_tag in self.blacklist_tags:
             if blacklisted_tag in tags:
                 return True
-
         return False

@@ -12,8 +12,6 @@ class Configuration:
     def __init__(self):
         self._config = None
         self.max_workers = 4
-        self.list_limit = 100
-        self.common_tags = []
         self.rules = []
 
     def load(self, filename: str):
@@ -22,16 +20,15 @@ class Configuration:
         return self
 
     def loads(self, s: str):
-
         try:
             self._config = toml.loads(s)
         except toml.TomlDecodeError as e:
             raise ConfigurationException(e)
 
-        self.list_limit = self._parse_int(self._config, 'list_limit', 10, 320, self.list_limit)
         self.max_workers = self._parse_int(self._config, 'max_workers', 1, 16, self.max_workers)
-        self.common_tags = self._parse_list_of_strings(self._config, 'common_tags', self.common_tags)
 
+        list_limit = self._parse_int(self._config, 'list_limit', 10, 320, 100)
+        common_tags = self._parse_list_of_strings(self._config, 'common_tags', [])
         blacklist_tags = self._parse_list_of_strings(self._config, 'blacklist_tags', [])
         minimum_score = self._parse_int(self._config, 'minimum_score', -100000, 100000, 0)
 
@@ -41,14 +38,14 @@ class Configuration:
             rule = Rule(rule_name)
 
             # TODO: Are common tags even a good idea?  Would handling 'rating' be enough?
-            rule.tags.extend(self.common_tags)
+            rule.tags.extend(common_tags)
             rule.tags.extend(self._parse_list_of_strings(rule_config, 'tags', []))
 
             # Default to global settings if not set
             rule.blacklist_tags = self._parse_list_of_strings(rule_config, 'blacklist_tags', blacklist_tags)
             rule.minimum_score = self._parse_int(rule_config, 'minimum_score', -100000, 100000, minimum_score)
             rule.download_directory = self._parse_string(rule_config, 'download_directory', None)
-            rule.list_limit = self._parse_int(rule_config, 'list_limit', 10, 320, self.list_limit)
+            rule.list_limit = self._parse_int(rule_config, 'list_limit', 10, 320, list_limit)
 
             # Sets are not ordered by id like general searches.  To make sure all items are found, need to order the
             # results by id (highest to lowest).  Check if the user used a 'set:' with an 'order:-id' and fix it.

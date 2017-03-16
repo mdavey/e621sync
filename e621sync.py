@@ -10,7 +10,7 @@ from e621sync.threadpool import ThreadPool, Job
 from e621sync.rule import Rule
 
 
-USER_AGENT = 'e621sync/0.40 (e621 username zero)'
+USER_AGENT = 'e621sync/0.41 (e621 username zero https://github.com/mdavey/e621sync)'
 HTTP_DEFAULT_TIMEOUT = 30
 
 
@@ -69,7 +69,7 @@ def process_rule(thread_pool: ThreadPool, rule: Rule, before_id: int = None):
 
     if counter > 0:
         print('[{:d}]  Rule<{}>  Found {:d} new items to download'.format(thread_pool.job_queue.qsize(), rule.name,
-                                                                           counter))
+                                                                          counter))
 
 
 def sync(rules: List[Rule], max_workers: int):

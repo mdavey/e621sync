@@ -21,7 +21,7 @@ class Job:
 
 class Worker(Thread):
     def __init__(self, job_queue: PriorityQueue):
-        super(Worker, self).__init__()
+        super().__init__()
         self.job_queue = job_queue
         self.is_running = True
 
