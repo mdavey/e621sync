@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 
 class Rule:
@@ -38,3 +38,9 @@ class Rule:
             if blacklisted_tag in tags:
                 return True
         return False
+
+    def get_pool_id(self) -> Optional[int]:
+        for tag in self.tags:
+            if tag.find('pool:') == 0:
+                return int(tag[len('pool:'):])
+        return None

@@ -50,3 +50,11 @@ download_directory = "./downloads/tagme/"
 # [rules."Here we go again"]
 # tags = [ "rating:safe", "temmie_(undertale)", "pixel_(artwork)" ]
 # download_directory = 'c:\images\temmie\'
+
+
+# Pools work (sort of)
+# They ignore all other tags, ratings, blacklist, etc
+# Filenames should be correctly ordered though
+# [rules."Pools kinda work"]
+# tags = [ "pool:123456" ]
+# download_directory = 'c:\images\pool_test\'

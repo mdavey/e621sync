@@ -38,6 +38,9 @@ too e.g. `[rule."Proper Sentence"]`.
 
 You can override the global `minimum_score` and `blacklist_tags` in each rule
 
+If the tags contain `pool:` all other options are ignored and the entire pool is downloaded (the the index of the item 
+prefixed to the filename)
+
 The file format is in TOML, if you want more information about the syntax see:
 
  * https://github.com/toml-lang/toml
@@ -48,7 +51,7 @@ The file format is in TOML, if you want more information about the syntax see:
     python e621sync.py
 
     
-## bugs
+## notes
 
 1. Downloaded file names are hard coded to `"{id}_{md5}.{ext}"`
 

@@ -2,7 +2,7 @@ from threading import Thread
 from queue import PriorityQueue, Empty
 
 
-class Job:
+class PriorityJob:
     def __init__(self, priority: int, fun, *args, **kwargs):
         self.priority = priority
         self.fun = fun
@@ -19,6 +19,16 @@ class Job:
         return self.priority < other.priority
 
 
+class LowPriorityJob(PriorityJob):
+    def __init__(self, fun, *args, **kwargs):
+        super().__init__(10, fun, *args, **kwargs)
+
+
+class HighPriorityJob(PriorityJob):
+    def __init__(self, fun, *args, **kwargs):
+        super().__init__(1, fun, *args, **kwargs)
+
+
 class Worker(Thread):
     def __init__(self, job_queue: PriorityQueue):
         super().__init__()
@@ -29,10 +39,15 @@ class Worker(Thread):
         while self.is_running:
             try:
                 job = self.job_queue.get(True, 1)
-                job.run()
-                self.job_queue.task_done()
             except Empty:
-                pass
+                continue
+
+            try:
+                job.run()
+            except Exception as e:
+                print(e)
+            finally:
+                self.job_queue.task_done()
 
     def stop(self):
         self.is_running = False
@@ -43,7 +58,7 @@ class ThreadPool:
         self.job_queue = PriorityQueue()
         self.threads = [Worker(self.job_queue) for _ in range(0, max_workers)]
 
-    def add_job(self, job: Job):
+    def add_job(self, job: PriorityJob):
         self.job_queue.put(job)
 
     def run(self):
