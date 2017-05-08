@@ -65,3 +65,9 @@ class ThreadPool:
         [worker.start() for worker in self.threads]
         self.job_queue.join()
         [worker.stop() for worker in self.threads]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.run()

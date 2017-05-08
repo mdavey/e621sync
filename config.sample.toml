@@ -11,8 +11,8 @@ max_workers = 4
 # tags to always apply to rules.  Note: This applies to the 6 tag maximum
 common_tags = [ "rating:safe" ]
 
-# Tag blacklist, do not count towards 6 tag limit, these tags are applied after getting list of items to download
-# Doesn't support score: or rating: pseudo tags
+# the tag blacklist does not count towards 6 tag limit, these tags are applied after getting list of items to download
+# Does not support score: or rating: pseudo tags
 blacklist_tags = [ "duck" ]
 
 # Minimum score for item to be downloaded
@@ -36,15 +36,13 @@ tags = [ "tagme" ]
 # Can remove the common blacklist tags by setting to empty list too
 # blacklist_tags = []
 
-# download directory, must have a trailing slash
+# download directory
 download_directory = "./downloads/tagme/"
 
 # Absolute directory of Windows would look like:
 # download_directory = "c:\\images\\tagme\\"
 # Or using single quotes:
 # download_directory = 'c:\images\tagme\'
-
-# Note: Directories under Windows also needs to have a trailing (back) slash...
 
 
 # [rules."Here we go again"]
