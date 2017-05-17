@@ -1,6 +1,10 @@
 from typing import List, Optional
 
 
+class RuleException(Exception):
+    pass
+
+
 class Rule:
     def __init__(self, name: str):
         self.name = name
@@ -14,23 +18,38 @@ class Rule:
         return "Rule<{}>  tags: {}  download_directory: {}  blacklist_tags: {}  minimum_score: {}".format(
             self.name, ','.join(self.tags), self.download_directory, ','.join(self.blacklist_tags), self.minimum_score)
 
+    @staticmethod
+    def _find_partial_tag(source_tags: List[str], partial_tag: str) -> Optional[str]:
+        """Looks for a start of a string in a list of string.  If found returns the entire string, else None
+           e.g.  _find_partial_tag(['foobar:123'], 'foo') -> 'foobar:123' """
+        for tag in source_tags:
+            if tag.find(partial_tag) == 0:
+                return tag
+        return None
+
     def has_score_tag(self) -> bool:
         """Does this rule use a 'score:' tag"""
-        for tag in self.tags:
-            if tag.find('score:') == 0:
-                return True
-        return False
+        return self._find_partial_tag(self.tags, 'score:') is not None
 
     def has_set_and_needs_order_tag(self) -> bool:
         """If a 'set:' tag is used, check if the 'order:-id' tag is missing"""
-        has_set = False
-        has_correct_order = False
-        for tag in self.tags:
-            if tag.find('set:') == 0:
-                has_set = True
-            elif tag == 'order:-id':
-                has_correct_order = True
-        return has_set and not has_correct_order
+        has_set = self._find_partial_tag(self.tags, 'set:')
+        has_correct = self._find_partial_tag(self.tags, 'order:')
+
+        # No set
+        if has_set is None:
+            return False
+
+        # Has set, but no correct
+        if has_correct is None:
+            return True
+
+        # Has set and a correct order tag
+        if has_correct == 'order:-id':
+            return False
+
+        # Has set and and an order tag, but it's wrong
+        raise RuleException('Rule has set: tag and order tag that is not "order:-id"')
 
     def has_blacklisted_tag(self, tags: List[str]) -> bool:
         """Checks if any of the passed tags are blacklisted"""
@@ -40,7 +59,10 @@ class Rule:
         return False
 
     def get_pool_id(self) -> Optional[int]:
-        for tag in self.tags:
-            if tag.find('pool:') == 0:
-                return int(tag[len('pool:'):])
+        pool_tag = self._find_partial_tag(self.tags, 'pool:')
+        if pool_tag:
+            try:
+                return int(pool_tag[len('pool:'):])
+            except ValueError:
+                raise RuleException('pool id must be an int in: {}'.format(pool_tag))
         return None
