@@ -12,7 +12,7 @@ class Configuration:
     def __init__(self):
         self._config = None
         self.max_workers = 4
-        self.rules = []
+        self.rules = []  # type: List[Rule]
 
     def load(self, filename: str):
         with open(filename, 'r') as f:
@@ -90,7 +90,7 @@ class Configuration:
             return default
 
         if type(config[name]) is not str:
-            ConfigurationException("{} most be a string".format(name))
+            raise ConfigurationException("{} most be a string".format(name))
 
         return config[name]
 
